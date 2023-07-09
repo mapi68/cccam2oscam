@@ -1,0 +1,49 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+
+      - name: Install pyinstaller
+        run: pip install pyinstaller
+
+      - name: Install pipreqs
+        run: pip install pipreqs
+
+      - name: Generate requirements.txt
+        run: |
+          pipreqs --force .
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Set up UPX
+        run: |
+          choco install upx -y
+
+      - name: Build EXE
+        run: |
+          pyinstaller cccam2oscam.spec
+        
+      - name: Create artifact
+        run: |
+          cd dist
+          move cccam2oscam_*.exe ..
+
+      - name: Save ZIP artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: cccam2oscam-win64
+          path: cccam2oscam_*.exe
+       
