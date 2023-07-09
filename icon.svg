@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="100%" height="100%" fill="none" id="rect68" />
+  <style>
+    .lettere {
+      font-family: "Arial Black", sans-serif;
+      font-size: 300px;
+      font-weight: bold;
+      fill: #00ff00; /* Colore verde */
+      text-anchor: middle;
+    }
+    .numero {
+      font-family: "Impact", sans-serif;
+      font-size: 600px;
+      font-weight: bold;
+      fill: #ff0000; /* Colore rosso */
+      text-anchor: middle;
+    }
+  </style>
+  <rect width="100%" height="100%" fill="transparent" id="rect72" x="0" y="0" />
+  <path fill="#0000ff" d="M -1.9748292,264.01614 C 353.08719,141.92842 698.12401,89.892989 1053.186,190.97559" id="path74" style="stroke-width:1.84457" />
+  <text class="lettere" x="200" y="650" id="text76">c</text>
+  <text class="numero" x="658.24713" y="692.83063" id="text78" transform="scale(0.77782335,1.285639)" style="stroke-width:1.28564">2</text>
+  <text class="lettere" x="824" y="650" id="text80">o</text>
+</svg>
