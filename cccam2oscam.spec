@@ -55,33 +55,3 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
-
-
-
-
-import msvcrt
-import shutil
-import os
-
-# Cerca se nella cartella di base c'è un file .exe e se esiste eliminalo
-file_exe = [file for file in os.listdir(os.getcwd()) if file.endswith(".exe")]
-if file_exe:
-	for file in file_exe:
-		os.remove(file)
-
-# Domanda all'utente
-print("\nVuoi spostare il file .exe dalla cartella 'dist/' alla cartella corrente? (s/n): ", end='', flush=True)
-
-# Verifica della risposta
-spostare_file = msvcrt.getwche().lower()
-if spostare_file == 's':
-    # Ottieni il percorso completo del file .exe nella cartella 'dist'
-    dist_path = os.path.join(os.getcwd(), 'dist', exe.name)
-	
-    # Sposta il file .exe dalla cartella 'dist' alla cartella corrente
-    shutil.move(dist_path, os.getcwd())
-
-    # Rimuovi la cartella 'build' e 'dist' se esistono
-    shutil.rmtree("build", ignore_errors=True)
-    shutil.rmtree("dist", ignore_errors=True)
-	
