@@ -42,7 +42,7 @@ jobs:
           move cccam2oscam_*.exe ..
 
       - name: Save ZIP artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: cccam2oscam-win64
           path: cccam2oscam_*.exe
