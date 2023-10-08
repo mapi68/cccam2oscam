@@ -64,6 +64,7 @@ class FTPConnectionWindow(QMainWindow):
         self.directory_dropdown = QComboBox()
         directories = [
             "/etc/tuxbox/config/",
+            "/etc/tuxbox/config/oscam/",
             "/hdd/oscam/",
             "/home/oscam/",
             "/usr/local/etc/",
