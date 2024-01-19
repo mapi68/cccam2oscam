@@ -12,7 +12,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         now = datetime.datetime.now()
-        self.VERSIONE = f"1.0.{now.month}.{now.day}"
+        self.VERSIONE = f"1.{now.year % 10}.{now.month}.{now.day}"
         self.setWindowTitle(f"CCcam2OsCam Converter {self.VERSIONE} by mapi68")
 
         # Get the full path of the "icon.ico" file
