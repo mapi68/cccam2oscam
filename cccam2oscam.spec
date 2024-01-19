@@ -9,7 +9,7 @@ block_cipher = None
 import datetime
 
 now = datetime.datetime.now()
-VERSIONE = f"1.0.{now.month}.{now.day}"
+VERSIONE = f"1.{now.year % 10}.{now.month}.{now.day}"
 
 # Determina la lista di tutti i .py nella cartella
 import glob
