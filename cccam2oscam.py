@@ -1,4 +1,3 @@
-import datetime
 import os
 import sys
 
@@ -11,9 +10,7 @@ from ftp_connection import *
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        now = datetime.datetime.now()
-        self.VERSIONE = f"1.{now.year % 10}.{now.month}.{now.day}"
-        self.setWindowTitle(f"CCcam2OsCam Converter {self.VERSIONE} by mapi68")
+        self.setWindowTitle(f"CCcam2OsCam Converter by mapi68")
 
         # Get the full path of the "icon.ico" file
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -125,7 +122,7 @@ class MainWindow(QWidget):
     def convert(self):
         cccam_cfg = self.textEdit.toPlainText().splitlines()
 
-        output = f"# Created with CCcam2OsCam Converter {self.VERSIONE}\n\n\n \
+        output = f"# Created with CCcam2OsCam Converter\n\n\n \
             [reader]\nlabel\t\t= DELETE\nprotocol\t\t= cccam\ndevice\t\t= dummy.com\n"
 
         current_reader = ""
