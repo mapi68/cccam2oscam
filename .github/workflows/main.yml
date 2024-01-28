@@ -9,10 +9,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
 
       - name: Install pyinstaller
         run: pip install pyinstaller
@@ -42,7 +42,7 @@ jobs:
           move cccam2oscam_*.exe ..
 
       - name: Save ZIP artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cccam2oscam-win64
           path: cccam2oscam_*.exe
