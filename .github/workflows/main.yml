@@ -15,10 +15,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Get Python version
+        id: get-python-version
+        run: |
+          PYTHON_VERSION=$(curl -s https://www.python.org/downloads/ | grep -oP 'Download Python \K\d+\.\d+\.\d+' | head -n1)
+          echo "::set-output name=python_version::${PYTHON_VERSION}"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12.1
+          python-version: ${{ steps.get-python-version.outputs.python_version }}
 
       - name: Install pyinstaller
         run: pip install pyinstaller
@@ -52,7 +58,4 @@ jobs:
         with:
           name: cccam2oscam-win64
           path: cccam2oscam_*.exe
-
-      - name: Grant access to download artifact
-        run: |
-          chmod -R a+r dist
+          
