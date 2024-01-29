@@ -47,7 +47,7 @@ jobs:
       - name: Set up UPX
         run: |
           choco install upx -y
-          cp /c/tools/upx/upx.exe ${{ runner.os }}-upx/
+          cp C:\ProgramData\chocolatey\lib\upx\tools\upx.exe Windows-upx/
 
       - name: Build EXE
         run: |
