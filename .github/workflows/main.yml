@@ -15,17 +15,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get Python version
-        id: get-python-version
-        run: |
-          $pythonVersion = (Invoke-WebRequest -Uri "https://www.python.org/downloads/" -UseBasicParsing).Content -match 'Download Python (\d+\.\d+\.\d+)' | Out-Null; $matches[1]
-          echo "PYTHON_VERSION=$pythonVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          shell: pwsh
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: 3.12.1
 
       - name: Install pyinstaller
         run: pip install pyinstaller
