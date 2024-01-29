@@ -1,6 +1,10 @@
 name: Build
 
 on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
   workflow_dispatch:
 
 jobs:
@@ -13,6 +17,8 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v5
+        with:
+          python-version: latest
 
       - name: Install pyinstaller
         run: pip install pyinstaller
@@ -27,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          
+
       - name: Set up UPX
         run: |
           choco install upx -y
@@ -35,7 +41,7 @@ jobs:
       - name: Build EXE
         run: |
           pyinstaller cccam2oscam.spec
-        
+
       - name: Create artifact
         run: |
           cd dist
@@ -46,4 +52,7 @@ jobs:
         with:
           name: cccam2oscam-win64
           path: cccam2oscam_*.exe
-       
+
+      - name: Grant access to download artifact
+        run: |
+          chmod -R a+r dist
