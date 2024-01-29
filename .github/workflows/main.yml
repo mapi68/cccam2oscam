@@ -18,8 +18,8 @@ jobs:
       - name: Get Python version
         id: get-python-version
         run: |
-          PYTHON_VERSION=$(curl -s https://www.python.org/downloads/ | grep -oP 'Download Python \K\d+\.\d+\.\d+' | head -n1)
-          echo "::set-output name=python_version::${PYTHON_VERSION}"
+          $pythonVersion = (Invoke-WebRequest -Uri "https://www.python.org/downloads/" -UseBasicParsing).Content -match 'Download Python (\d+\.\d+\.\d+)' | Out-Null; $matches[1]
+          echo "::set-output name=python_version::${env:pythonVersion}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
