@@ -34,9 +34,20 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Cache UPX
+        uses: actions/cache@v4
+        with:
+          path: |
+            |-
+              ${{ runner.os }}-upx
+          key: upx-${{ runner.os }}-${{ hashFiles('upx/*.exe') }}
+          restore-keys: |
+            upx-${{ runner.os }}-
+
       - name: Set up UPX
         run: |
           choco install upx -y
+          cp /c/tools/upx/upx.exe ${{ runner.os }}-upx/
 
       - name: Build EXE
         run: |
