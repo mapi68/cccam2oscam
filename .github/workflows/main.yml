@@ -34,20 +34,9 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Cache UPX
-        uses: actions/cache@v4
-        with:
-          path: |
-            |-
-              ${{ runner.os }}-upx
-          key: upx-${{ runner.os }}-${{ hashFiles('upx/*.exe') }}
-          restore-keys: |
-            upx-${{ runner.os }}-
-
       - name: Set up UPX
         run: |
           choco install upx -y
-          cp C:\ProgramData\chocolatey\lib\upx\tools\upx.exe Windows-upx/
 
       - name: Build EXE
         run: |
@@ -63,4 +52,3 @@ jobs:
         with:
           name: cccam2oscam-win64
           path: cccam2oscam_*.exe
-          
