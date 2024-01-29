@@ -19,12 +19,12 @@ jobs:
         id: get-python-version
         run: |
           $pythonVersion = (Invoke-WebRequest -Uri "https://www.python.org/downloads/" -UseBasicParsing).Content -match 'Download Python (\d+\.\d+\.\d+)' | Out-Null; $matches[1]
-          echo "::set-output name=python_version::${env:pythonVersion}"
+          echo "PYTHON_VERSION=${env:pythonVersion}" >> $GITHUB_ENV
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ steps.get-python-version.outputs.python_version }}
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install pyinstaller
         run: pip install pyinstaller
