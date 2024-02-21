@@ -18,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12.1
+          python-version: 'latest'
 
       - name: Install pyinstaller
         run: pip install pyinstaller
