@@ -4,14 +4,12 @@ import sys
 
 from PyQt5.QtGui import QIcon, QIntValidator
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QHBoxLayout, QDialog, QMessageBox, QScrollArea, QComboBox, QLineEdit
-
 from ftp_connection import *
-
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"CCcam2OsCam Converter by mapi68")
+        self.setWindowTitle(f"CCcam2OSCam Converter by mapi68")
 
         # Get the full path of the "icon.ico" file
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -123,7 +121,7 @@ class MainWindow(QWidget):
     def convert(self):
         cccam_cfg = self.textEdit.toPlainText().splitlines()
 
-        output = f"# Created with CCcam2OsCam Converter\n\n\n \
+        output = f"# Created with CCcam2OSCam Converter\n\n\n \
             [reader]\nlabel\t\t= DELETE\nprotocol\t\t= cccam\ndevice\t\t= dummy.com\n"
 
         current_reader = ""
@@ -261,8 +259,8 @@ class MainWindow(QWidget):
                            "<p><h3>Normal N-line example:</h3><i>N: host_name_ip port username password des_key</i></p>"
                            "<p><h3>Extended N-line example:</h3><i>N: host_name_ip port usename password des_key # caid:ident</i><br></p>"
                            "<p><h3>When you export to oscam.server...</h3>...the first account created will be <i>DELETE</i>.<br>"
-                           "Please, upload the file to OsCam and delete the account <i>DELETE</i>:<br>"
-                           "this will restore the right formatted standard of oscam.server.<br><br></p><p>CCcam2OsCam Converter by mapi68</p></body></html>")
+                           "Please, upload the file to OSCam and delete the account <i>DELETE</i>:<br>"
+                           "this will restore the right formatted standard of oscam.server.<br><br></p><p>CCcam2OSCam Converter by mapi68</p></body></html>")
 
 
 if __name__ == "__main__":
