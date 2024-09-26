@@ -65,6 +65,7 @@ class FTPConnectionWindow(QMainWindow):
         directories = [
             "/etc/tuxbox/config/",
             "/etc/tuxbox/config/oscam/",
+            "/etc/tuxbox/config/oscam-emu/",
             "/hdd/oscam/",
             "/home/oscam/",
             "/usr/local/etc/",
