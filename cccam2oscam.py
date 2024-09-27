@@ -1,24 +1,48 @@
 import datetime
 import os
 import sys
-
-from PyQt5.QtGui import QIcon, QIntValidator
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QHBoxLayout, QDialog, QMessageBox, QScrollArea, QComboBox, QLineEdit
+from PyQt5.QtGui import QIcon, QIntValidator, QPalette, QColor
+from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, 
+                             QTextEdit, QFileDialog, QHBoxLayout, QDialog, QMessageBox, 
+                             QScrollArea, QComboBox, QLineEdit, QStyle, QStyleFactory)
+from PyQt5.QtCore import Qt
 from ftp_connection import *
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"CCcam2OSCam Converter by mapi68")
-
-        # Get the full path of the "icon.ico" file
+        self.setWindowTitle("CCcam2OSCam Converter by mapi68")
         script_dir = os.path.dirname(os.path.abspath(__file__))
         icon_path = os.path.join(script_dir, "icon.ico")
-        # Set the window icon
         self.setWindowIcon(QIcon(icon_path))
-
-        self.resize(600, 600)
+        self.resize(700, 700)
         self.setupUI()
+        self.setStyle(QStyleFactory.create('Fusion'))
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #2b2b2b;
+                color: #ffffff;
+            }
+            QPushButton {
+                background-color: #4a4a4a;
+                border: 1px solid #646464;
+                border-radius: 5px;
+                padding: 5px;
+                min-height: 30px;
+            }
+            QPushButton:hover {
+                background-color: #5a5a5a;
+            }
+            QTextEdit, QLineEdit, QComboBox {
+                background-color: #3a3a3a;
+                border: 1px solid #646464;
+                border-radius: 3px;
+                padding: 2px;
+            }
+            QLabel {
+                color: #d4d4d4;
+            }
+        """)
 
     def setupUI(self):
         layout = QVBoxLayout(self)
@@ -31,50 +55,43 @@ class MainWindow(QWidget):
         layout.addWidget(fileButton)
 
         filterLayout = QHBoxLayout()
-
         showLinesButton = QPushButton("Show only C-lines and N-lines")
         showLinesButton.clicked.connect(self.filterLines)
         filterLayout.addWidget(showLinesButton)
-
         layout.addLayout(filterLayout)
 
-        # Add text boxes for entering InactivityTimeout values
         inactivityLayout = QHBoxLayout()
-
         inactivityLabel1 = QLabel("Inactivity timeout C-lines (seconds):")
         self.inactivityEdit1 = QLineEdit()
-        self.inactivityEdit1.setValidator(QIntValidator(-1, 9999))  # Set validation for numbers from -1 to 9999
-        self.inactivityEdit1.setText("600")  # Default value "600"
-        self.inactivityEdit1.setFixedWidth(50)  # Set fixed width for the input box
+        self.inactivityEdit1.setValidator(QIntValidator(-1, 9999))
+        self.inactivityEdit1.setText("600")
+        self.inactivityEdit1.setFixedWidth(50)
         inactivityLayout.addWidget(inactivityLabel1)
         inactivityLayout.addWidget(self.inactivityEdit1)
 
         inactivityLabel2 = QLabel("Inactivity timeout N-lines (seconds):")
         self.inactivityEdit2 = QLineEdit()
-        self.inactivityEdit2.setValidator(QIntValidator(-1, 9999))  # Set validation for numbers from -1 to 9999
-        self.inactivityEdit2.setText("-1")  # Default value "-1"
-        self.inactivityEdit2.setFixedWidth(50)  # Set fixed width for the input box
+        self.inactivityEdit2.setValidator(QIntValidator(-1, 9999))
+        self.inactivityEdit2.setText("-1")
+        self.inactivityEdit2.setFixedWidth(50)
         inactivityLayout.addWidget(inactivityLabel2)
         inactivityLayout.addWidget(self.inactivityEdit2)
-
         layout.addLayout(inactivityLayout)
 
-        # Add dropdown menus for selecting groups
         groupLayout = QHBoxLayout()
         groupLabel1 = QLabel("C-lines group (1-64):")
         self.groupComboBox1 = QComboBox()
-        self.groupComboBox1.addItems([str(i) for i in range(1, 65)])  # Numbering from 1 to 64
-        self.groupComboBox1.setCurrentText("1")  # Default value "1"
+        self.groupComboBox1.addItems([str(i) for i in range(1, 65)])
+        self.groupComboBox1.setCurrentText("1")
         groupLayout.addWidget(groupLabel1)
         groupLayout.addWidget(self.groupComboBox1)
 
         groupLabel2 = QLabel("N-lines group (1-64):")
         self.groupComboBox2 = QComboBox()
-        self.groupComboBox2.addItems([str(i) for i in range(1, 65)])  # Numbering from 1 to 64
-        self.groupComboBox2.setCurrentText("1")  # Default value "1"
+        self.groupComboBox2.addItems([str(i) for i in range(1, 65)])
+        self.groupComboBox2.setCurrentText("1")
         groupLayout.addWidget(groupLabel2)
         groupLayout.addWidget(self.groupComboBox2)
-
         layout.addLayout(groupLayout)
 
         convertButton = QPushButton("Convert to oscam.server")
@@ -107,146 +124,136 @@ class MainWindow(QWidget):
                 self.filterLines()
 
     def filterLines(self):
-        filterText = "Show only C-lines and N-lines"
         cccam_cfg = self.textEdit.toPlainText().splitlines()
-
-        filtered_lines = []
-
-        for line in cccam_cfg:
-            if line.startswith("C:") or line.startswith("N:"):
-                filtered_lines.append(line)
-
+        filtered_lines = [line for line in cccam_cfg if line.startswith(("C:", "N:"))]
         self.textEdit.setText("\n".join(filtered_lines))
 
     def convert(self):
         cccam_cfg = self.textEdit.toPlainText().splitlines()
-
-        output = f"# Created with CCcam2OSCam Converter\n\n\n \
-            [reader]\nlabel\t\t= DELETE\nprotocol\t\t= cccam\ndevice\t\t= dummy.com\n"
-
-        current_reader = ""
-        ignore_lines = False
+        output = self.generate_header()
 
         for line in cccam_cfg:
             if line.strip():
-                if line.startswith("#"):
-                    ignore_lines = False
-                elif line.startswith("C: ") or line.startswith("N: "):
-                    current_reader = line
-                    ignore_lines = False
-                elif not ignore_lines:
-                    current_reader += line
-
-                parts = current_reader.split()
-                if len(parts) < 5:
-                    QMessageBox.warning(self, "Format Error", "One or more lines are incomplete.")
-                    return
-                OPROTOCOL = parts[0]
-                OSERVER = parts[1]
-                OPORT = parts[2]
-                OUSER = parts[3]
-                OPASS = parts[4]
-
-                config = ""
-
-                if OPROTOCOL == "N:":
-                    OKEY = "".join(parts[5:20]).replace(" ", "")
-                    if "#" in OKEY:
-                        OIDENT = parts[20].replace(" ", "")
-                        OCAID = OIDENT.split(":")[0]
-                        OKEY = OKEY.replace("#", "")
-                    else:
-                        OIDENT = ""
-                        OCAID = ""
-
-                    config += "\n[reader]\n"
-                    config += f"label\t\t= {OUSER}@{OSERVER}:{OPORT} {OIDENT}\n"
-                    config += f"description\t= {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                    config += f"protocol\t\t= newcamd\n"
-                    config += f"device\t\t= {OSERVER},{OPORT}\n"
-                    config += f"key\t\t= {OKEY}\n"
-                    config += f"user\t\t= {OUSER}\n"
-                    config += f"password\t\t= {OPASS}\n"
-                    config += f"inactivitytimeout\t= {self.inactivityEdit2.text()}\n"  # Use the value entered in the text box
-                    config += f"disableserverfilter\t= 1\n"
-                    config += f"connectoninit\t= 1\n"
-                    config += f"caid\t\t= {OCAID}\n"
-                    config += f"ident\t\t= {OIDENT}\n"
-                    config += f"group\t\t= {self.groupComboBox2.currentText()}\n"  # Use the selected value from the drop-down menu
-                    config += f"audisabled\t= 1\n"
-                elif OPROTOCOL == "C:":
-                    config += "\n[reader]\n"
-                    config += f"label\t\t= {OUSER}@{OSERVER}:{OPORT}\n"
-                    config += f"description\t= {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                    config += f"protocol\t\t= cccam\n"
-                    config += f"device\t\t= {OSERVER},{OPORT}\n"
-                    config += f"user\t\t= {OUSER}\n"
-                    config += f"password\t\t= {OPASS}\n"
-                    config += f"inactivitytimeout\t= {self.inactivityEdit1.text()}\n"  # Use the value entered in the text box
-                    config += f"group\t\t= {self.groupComboBox1.currentText()}\n"  # Use the selected value from the drop-down menu
-                    config += f"cccversion\t= 2.3.2\n"
-                    config += f"audisabled\t= 1\n"
-
-                output += config
+                config = self.process_line(line)
+                if config:
+                    output += config
 
         if output:
-            defaultFileName = "oscam.server"
-            fileName, _ = QFileDialog.getSaveFileName(
-                self, "Save oscam.server file", defaultFileName, "File oscam.server (*.server)"
-            )
+            self.save_oscam_server(output)
 
-            if fileName:
-                output = self.validateOscamServer(output)
-                with open(fileName, "w", encoding="utf-8") as file:
-                    file.write(output)
+    def generate_header(self):
+        return f"# Created with CCcam2OSCam Converter\n\n\n[reader]\nlabel\t\t= DELETE ME\nprotocol\t\t= cccam\ndevice\t\t= dummy.com,8888\n"
+
+    def process_line(self, line):
+        parts = line.split()
+        if len(parts) < 5:
+            QMessageBox.warning(self, "Format Error", f"Line is incomplete: {line}")
+            return None
+
+        protocol, server, port, user, password = parts[:5]
+        
+        if protocol == "N:":
+            return self.process_n_line(parts)
+        elif protocol == "C:":
+            return self.process_c_line(parts)
+        else:
+            return None
+
+    def process_n_line(self, parts):
+        server, port, user, password = parts[1:5]
+        key = "".join(parts[5:20]).replace(" ", "")
+        ident = ""
+        caid = ""
+
+        if "#" in key:
+            ident = parts[20].replace(" ", "")
+            caid = ident.split(":")[0]
+            key = key.replace("#", "")
+
+        config = f"\n[reader]\n"
+        config += f"label\t\t= {user}@{server}:{port} {ident}\n"
+        config += f"description\t\t= {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        config += f"protocol\t\t= newcamd\n"
+        config += f"device\t\t= {server},{port}\n"
+        config += f"key\t\t= {key}\n"
+        config += f"user\t\t= {user}\n"
+        config += f"password\t\t= {password}\n"
+        config += f"inactivitytimeout\t\t= {self.inactivityEdit2.text()}\n"
+        config += f"disableserverfilter\t= 1\n"
+        config += f"connectoninit\t\t= 1\n"
+        config += f"caid\t\t= {caid}\n"
+        config += f"ident\t\t= {ident}\n"
+        config += f"group\t\t= {self.groupComboBox2.currentText()}\n"
+        config += f"audisabled\t\t= 1\n"
+
+        return config
+
+    def process_c_line(self, parts):
+        server, port, user, password = parts[1:5]
+
+        config = f"\n[reader]\n"
+        config += f"label\t\t= {user}@{server}:{port}\n"
+        config += f"description\t\t= {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        config += f"protocol\t\t= cccam\n"
+        config += f"device\t\t= {server},{port}\n"
+        config += f"user\t\t= {user}\n"
+        config += f"password\t\t= {password}\n"
+        config += f"inactivitytimeout\t\t= {self.inactivityEdit1.text()}\n"
+        config += f"group\t\t= {self.groupComboBox1.currentText()}\n"
+        config += f"cccversion\t\t= 2.3.2\n"
+        config += f"audisabled\t\t= 1\n"
+
+        return config
+
+    def save_oscam_server(self, output):
+        defaultFileName = "oscam.server"
+        fileName, _ = QFileDialog.getSaveFileName(
+            self, "Save oscam.server file", defaultFileName, "File oscam.server (*.server)"
+        )
+
+        if fileName:
+            output = self.validateOscamServer(output)
+            with open(fileName, "w", encoding="utf-8") as file:
+                file.write(output)
+            QMessageBox.information(self, "Success", f"File saved successfully: {fileName}")
 
     def validateOscamServer(self, content):
         lines = content.splitlines()
-        valid_lines = []
-
-        for line in lines:
-            line = line.strip()
-            if line.endswith("="):
-                continue
-            valid_lines.append(line)
-
-        return "\n".join(valid_lines)
+        return "\n".join(line.strip() for line in lines if not line.strip().endswith("="))
 
     def viewContent(self):
-            executable_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.argv[0]))
-            file_paths = [
-                os.path.join(executable_dir, "oscam.server"),  # Path in the executable folder
-                "oscam.server"  # Path in the same folder as the current Python file
-            ]
+        executable_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.argv[0]))
+        file_paths = [
+            os.path.join(executable_dir, "oscam.server"),
+            "oscam.server"
+        ]
 
-            found_file = None
-            for file_path in file_paths:
-                if os.path.exists(file_path):
-                    found_file = file_path
-                    break
+        found_file = next((path for path in file_paths if os.path.exists(path)), None)
 
-            if found_file:
-                with open(found_file, "r", encoding="utf-8") as file:
-                    content = file.read()
-                if content:
-                    dialog = QDialog(self)
-                    dialog.setWindowTitle("View oscam.server")
-                    dialog.resize(450, 800)
-                    dialog.move(self.x() - 455, self.y() - 100)
+        if found_file:
+            with open(found_file, "r", encoding="utf-8") as file:
+                content = file.read()
+            if content:
+                self.showContentDialog(content)
+        else:
+            QMessageBox.information(self, "Information", "oscam.server does not exist.")
 
-                    layout = QVBoxLayout(dialog)
+    def showContentDialog(self, content):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("View oscam.server")
+        dialog.resize(500, 800)
+        dialog.move(self.x() + self.width() + 10, self.y())
 
-                    scrollArea = QScrollArea(dialog)
-                    scrollArea.setWidgetResizable(True)
+        layout = QVBoxLayout(dialog)
+        scrollArea = QScrollArea(dialog)
+        scrollArea.setWidgetResizable(True)
+        contentLabel = QLabel(content)
+        contentLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        scrollArea.setWidget(contentLabel)
+        layout.addWidget(scrollArea)
 
-                    contentLabel = QLabel(content)
-                    scrollArea.setWidget(contentLabel)
-
-                    layout.addWidget(scrollArea)
-
-                    dialog.exec()
-            else:
-                QMessageBox.information(self, "Information", "oscam.server does not exist.")
+        dialog.setStyleSheet(self.styleSheet())
+        dialog.exec()
 
     def openWindowFTP(self):
         self.finestraFTP = FTPConnectionWindow()
@@ -258,8 +265,8 @@ class MainWindow(QWidget):
                            "<p><h3>C-line example:</h3><i>C: host_name_ip port username password</i></p>"
                            "<p><h3>Normal N-line example:</h3><i>N: host_name_ip port username password des_key</i></p>"
                            "<p><h3>Extended N-line example:</h3><i>N: host_name_ip port usename password des_key # caid:ident</i><br></p>"
-                           "<p><h3>When you export to oscam.server...</h3>...the first account created will be <i>DELETE</i>.<br>"
-                           "Please, upload the file to OSCam and delete the account <i>DELETE</i>:<br>"
+                           "<p><h3>When you export to oscam.server...</h3>...the first account created will be call <i>'DELETE ME'</i>.<br>"
+                           "Please, upload the file to OSCam and delete the account <i>'DELETE ME'</i>:<br>"
                            "this will restore the right formatted standard of oscam.server.<br><br></p><p>CCcam2OSCam Converter by mapi68</p></body></html>")
 
 
@@ -268,3 +275,4 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+    

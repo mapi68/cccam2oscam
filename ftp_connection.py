@@ -4,9 +4,12 @@ import os
 import sys
 import inspect
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit, QVBoxLayout, QWidget, QLabel, QLineEdit, QComboBox, QHBoxLayout, QDialog, QGridLayout, QMessageBox
-
+from PyQt5.QtGui import QIcon, QIntValidator
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QTextEdit, 
+                             QVBoxLayout, QWidget, QLabel, QLineEdit, QComboBox, 
+                             QHBoxLayout, QDialog, QGridLayout, QMessageBox, 
+                             QScrollArea, QStyle, QStyleFactory)
+from PyQt5.QtCore import Qt
 
 class OscamServerWindow(QDialog):
     def __init__(self, file_data):
@@ -22,17 +25,27 @@ class OscamServerWindow(QDialog):
 
         self.text_edit.setPlainText("\n".join(file_data))
 
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #2b2b2b;
+                color: #ffffff;
+            }
+            QTextEdit {
+                background-color: #3a3a3a;
+                border: 1px solid #646464;
+                border-radius: 3px;
+                padding: 2px;
+            }
+        """)
 
 class FTPConnectionWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("FTP Connection Enigma2")
 
-        # Get the full path of the "icon.ico" file
         current_file = inspect.getfile(inspect.currentframe())
         script_dir = os.path.dirname(os.path.abspath(__file__))
         icon_path = os.path.join(script_dir, "icon.ico")
-        # Set the window icon
         self.setWindowIcon(QIcon(icon_path))
 
         self.resize(380, 400)
@@ -42,23 +55,58 @@ class FTPConnectionWindow(QMainWindow):
         self.default_password = ""
         self.default_directory = "/etc/tuxbox/config/"
 
-        layout = QGridLayout()
+        self.setup_ui()
+        self.load_configuration()
+
+        self.setStyle(QStyleFactory.create('Fusion'))
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #2b2b2b;
+                color: #ffffff;
+            }
+            QPushButton {
+                background-color: #4a4a4a;
+                border: 1px solid #646464;
+                border-radius: 5px;
+                padding: 5px;
+                min-height: 30px;
+            }
+            QPushButton:hover {
+                background-color: #5a5a5a;
+            }
+            QTextEdit, QLineEdit, QComboBox {
+                background-color: #3a3a3a;
+                border: 1px solid #646464;
+                border-radius: 3px;
+                padding: 2px;
+            }
+            QLabel {
+                color: #d4d4d4;
+            }
+        """)
+
+    def setup_ui(self):
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
+
+        form_layout = QGridLayout()
 
         host_label = QLabel("IP Address or Hostname:")
         self.host_input = QLineEdit(self.default_host)
-        layout.addWidget(host_label, 0, 0)
-        layout.addWidget(self.host_input, 0, 1)
+        form_layout.addWidget(host_label, 0, 0)
+        form_layout.addWidget(self.host_input, 0, 1)
 
         username_label = QLabel("Username:")
         self.username_input = QLineEdit(self.default_username)
-        layout.addWidget(username_label, 1, 0)
-        layout.addWidget(self.username_input, 1, 1)
+        form_layout.addWidget(username_label, 1, 0)
+        form_layout.addWidget(self.username_input, 1, 1)
 
         password_label = QLabel("Password:")
         self.password_input = QLineEdit(self.default_password)
         self.password_input.setEchoMode(QLineEdit.Password)
-        layout.addWidget(password_label, 2, 0)
-        layout.addWidget(self.password_input, 2, 1)
+        form_layout.addWidget(password_label, 2, 0)
+        form_layout.addWidget(self.password_input, 2, 1)
 
         directory_label = QLabel("Destination Directory:")
         self.directory_dropdown = QComboBox()
@@ -77,34 +125,38 @@ class FTPConnectionWindow(QMainWindow):
         ]
         self.directory_dropdown.addItems(directories)
         self.directory_dropdown.setCurrentText(self.default_directory)
-        layout.addWidget(directory_label, 3, 0)
-        layout.addWidget(self.directory_dropdown, 3, 1)
+        form_layout.addWidget(directory_label, 3, 0)
+        form_layout.addWidget(self.directory_dropdown, 3, 1)
+
+        layout.addLayout(form_layout)
 
         self.console = QTextEdit()
         self.console.setReadOnly(True)
-        layout.addWidget(self.console, 4, 0, 1, 2)
+        layout.addWidget(self.console)
 
-        button = QPushButton("Test Connection")
-        button.clicked.connect(self.test_connection)
-        layout.addWidget(button, 5, 0)
+        button_layout = QHBoxLayout()
+
+        test_button = QPushButton("Test Connection")
+        test_button.clicked.connect(self.test_connection)
+        button_layout.addWidget(test_button)
 
         upload_button = QPushButton("Upload local oscam.server to Enigma2")
         upload_button.clicked.connect(self.upload_oscam_server)
-        layout.addWidget(upload_button, 5, 1)
+        button_layout.addWidget(upload_button)
+
+        layout.addLayout(button_layout)
+
+        button_layout2 = QHBoxLayout()
 
         view_button = QPushButton("View remote oscam.server")
         view_button.clicked.connect(self.view_oscam_server)
-        layout.addWidget(view_button, 6, 0)
+        button_layout2.addWidget(view_button)
 
         save_button = QPushButton("Save Configuration")
         save_button.clicked.connect(self.save_configuration)
-        layout.addWidget(save_button, 6, 1)
+        button_layout2.addWidget(save_button)
 
-        self.load_configuration()  # Load configuration if present
-
-        widget = QWidget()
-        widget.setLayout(layout)
-        self.setCentralWidget(widget)
+        layout.addLayout(button_layout2)
 
     def load_configuration(self):
         config = configparser.ConfigParser()
@@ -115,7 +167,7 @@ class FTPConnectionWindow(QMainWindow):
             self.password_input.setText(config.get("FTP", "password"))
             self.directory_dropdown.setCurrentText(config.get("FTP", "directory"))
         except configparser.Error:
-            pass  # No configuration file found or error while reading
+            pass
 
     def save_configuration(self):
         config = configparser.ConfigParser()
@@ -193,7 +245,6 @@ class FTPConnectionWindow(QMainWindow):
             QMessageBox.warning(self, "Warning", "FTP configuration is missing. Please enter all FTP details.")
             return False
         return True
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
