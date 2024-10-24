@@ -3,12 +3,13 @@ import ftplib
 import os
 import sys
 import inspect
-
-from PyQt5.QtGui import QIcon, QIntValidator
+from datetime import datetime
+import requests
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QTextEdit, 
                              QVBoxLayout, QWidget, QLabel, QLineEdit, QComboBox, 
                              QHBoxLayout, QDialog, QGridLayout, QMessageBox, 
-                             QScrollArea, QStyle, QStyleFactory)
+                             QStyleFactory)
 from PyQt5.QtCore import Qt
 
 class OscamServerWindow(QDialog):
@@ -48,7 +49,7 @@ class FTPConnectionWindow(QMainWindow):
         icon_path = os.path.join(script_dir, "icon.ico")
         self.setWindowIcon(QIcon(icon_path))
 
-        self.resize(380, 400)
+        self.resize(380, 500)
 
         self.default_host = ""
         self.default_username = "root"
@@ -83,6 +84,14 @@ class FTPConnectionWindow(QMainWindow):
             QLabel {
                 color: #d4d4d4;
             }
+            QComboBox::drop-down {
+                border: 0px;
+            }
+            QComboBox::down-arrow {
+                image: url(down_arrow.png);
+                width: 12px;
+                height: 12px;
+            }
         """)
 
     def setup_ui(self):
@@ -108,7 +117,7 @@ class FTPConnectionWindow(QMainWindow):
         form_layout.addWidget(password_label, 2, 0)
         form_layout.addWidget(self.password_input, 2, 1)
 
-        directory_label = QLabel("Destination Directory:")
+        directory_label = QLabel("Directory:")
         self.directory_dropdown = QComboBox()
         directories = [
             "/etc/tuxbox/config/",
@@ -132,31 +141,44 @@ class FTPConnectionWindow(QMainWindow):
 
         self.console = QTextEdit()
         self.console.setReadOnly(True)
+        self.console.setMinimumHeight(100)
         layout.addWidget(self.console)
 
-        button_layout = QHBoxLayout()
-
+        button_layout1 = QHBoxLayout()
         test_button = QPushButton("Test Connection")
         test_button.clicked.connect(self.test_connection)
-        button_layout.addWidget(test_button)
+        button_layout1.addWidget(test_button)
 
-        upload_button = QPushButton("Upload local oscam.server to Enigma2")
+        upload_button = QPushButton("Upload oscam.server")
         upload_button.clicked.connect(self.upload_oscam_server)
-        button_layout.addWidget(upload_button)
-
-        layout.addLayout(button_layout)
+        button_layout1.addWidget(upload_button)
+        layout.addLayout(button_layout1)
 
         button_layout2 = QHBoxLayout()
-
-        view_button = QPushButton("View remote oscam.server")
+        view_button = QPushButton("View Remote oscam.server")
         view_button.clicked.connect(self.view_oscam_server)
         button_layout2.addWidget(view_button)
 
+        download_button = QPushButton("Download oscam.server")
+        download_button.clicked.connect(self.download_oscam_server)
+        button_layout2.addWidget(download_button)
+        layout.addLayout(button_layout2)
+
+        button_layout3 = QHBoxLayout()
+        backup_button = QPushButton("Backup Configuration")
+        backup_button.clicked.connect(self.backup_configuration)
+        button_layout3.addWidget(backup_button)
+
+        restart_button = QPushButton("Restart Oscam")
+        restart_button.clicked.connect(self.restart_oscam)
+        button_layout3.addWidget(restart_button)
+        layout.addLayout(button_layout3)
+
+        button_layout4 = QHBoxLayout()
         save_button = QPushButton("Save Configuration")
         save_button.clicked.connect(self.save_configuration)
-        button_layout2.addWidget(save_button)
-
-        layout.addLayout(button_layout2)
+        button_layout4.addWidget(save_button)
+        layout.addLayout(button_layout4)
 
     def load_configuration(self):
         config = configparser.ConfigParser()
@@ -192,6 +214,7 @@ class FTPConnectionWindow(QMainWindow):
                 ftp.login(username, password)
                 response = ftp.getwelcome()
                 ftp.quit()
+                self.console.append("Connection successful!")
                 self.console.append(response)
             except ftplib.all_errors as e:
                 self.console.append("Error connecting to FTP: " + str(e))
@@ -207,12 +230,45 @@ class FTPConnectionWindow(QMainWindow):
                 ftp = ftplib.FTP(host)
                 ftp.login(username, password)
                 ftp.cwd(directory)
+                
+                try:
+                    backup_name = f"oscam.server.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    ftp.rename("oscam.server", backup_name)
+                    self.console.append(f"Created backup of remote file as {backup_name}")
+                except ftplib.error_perm:
+                    self.console.append("No existing remote file to backup")
+
                 with open("oscam.server", "rb") as file:
                     ftp.storbinary("STOR oscam.server", file)
                 ftp.quit()
-                self.console.append("File 'oscam.server' uploaded successfully to " + directory)
+                self.console.append(f"File 'oscam.server' uploaded successfully to {directory}")
             except ftplib.all_errors as e:
                 self.console.append("Error uploading file: " + str(e))
+
+    def download_oscam_server(self):
+        if self.check_ftp_configuration():
+            host = self.host_input.text()
+            username = self.username_input.text()
+            password = self.password_input.text()
+            directory = self.directory_dropdown.currentText()
+
+            try:
+                ftp = ftplib.FTP(host)
+                ftp.login(username, password)
+                ftp.cwd(directory)
+
+                if os.path.exists("oscam.server"):
+                    backup_name = f"oscam.server.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    os.rename("oscam.server", backup_name)
+                    self.console.append(f"Created backup of local file as {backup_name}")
+
+                with open("oscam.server", "wb") as file:
+                    ftp.retrbinary("RETR oscam.server", file.write)
+
+                ftp.quit()
+                self.console.append("File 'oscam.server' downloaded successfully")
+            except ftplib.all_errors as e:
+                self.console.append("Error downloading file: " + str(e))
 
     def view_oscam_server(self):
         if self.check_ftp_configuration():
@@ -232,9 +288,97 @@ class FTPConnectionWindow(QMainWindow):
                 oscam_server_window = OscamServerWindow(file_data)
                 oscam_server_window.exec_()
 
-                self.console.append("File 'oscam.server' viewed successfully from " + directory)
+                self.console.append(f"File 'oscam.server' viewed successfully from {directory}")
             except ftplib.all_errors as e:
                 self.console.append("Error viewing file: " + str(e))
+
+    def backup_configuration(self):
+        if self.check_ftp_configuration():
+            host = self.host_input.text()
+            username = self.username_input.text()
+            password = self.password_input.text()
+            directory = self.directory_dropdown.currentText()
+
+            try:
+                ftp = ftplib.FTP(host)
+                ftp.login(username, password)
+                ftp.cwd(directory)
+
+                backup_dir = "oscam_backups"
+                if not os.path.exists(backup_dir):
+                    os.makedirs(backup_dir)
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_subdir = os.path.join(backup_dir, f"backup_{timestamp}")
+                os.makedirs(backup_subdir)
+
+                file_list = []
+                ftp.retrlines('LIST', file_list.append)
+
+                files_to_backup = []
+                for file_info in file_list:
+                    if file_info.startswith('d'):
+                        continue
+                    filename = file_info.split()[-1]
+                    files_to_backup.append(filename)
+
+                for filename in files_to_backup:
+                    try:
+                        with open(os.path.join(backup_subdir, filename), "wb") as local_file:
+                            ftp.retrbinary(f"RETR {filename}", local_file.write)
+                            self.console.append(f"Backed up {filename}")
+                    except ftplib.error_perm as e:
+                        self.console.append(f"Error backing up {filename}: {str(e)}")
+
+                ftp.quit()
+                self.console.append(f"Backup completed successfully in {backup_subdir}")
+                self.console.append(f"Total files backed up: {len(files_to_backup)}")
+
+            except ftplib.all_errors as e:
+                self.console.append(f"FTP Error during backup: {str(e)}")
+            except Exception as e:
+                self.console.append(f"Error during backup: {str(e)}")
+
+    def restart_oscam(self):
+        if self.check_ftp_configuration():
+            host = self.host_input.text()
+            directory = self.directory_dropdown.currentText()
+
+            try:
+                ftp = ftplib.FTP(host)
+                ftp.login(self.username_input.text(), self.password_input.text())
+                ftp.cwd(directory)
+
+                conf_data = []
+                ftp.retrlines('RETR oscam.conf', conf_data.append)
+                ftp.quit()
+
+                http_port = None
+                for line in conf_data:
+                    if 'httpport' in line:
+                        try:
+                            http_port = line.split()[2]
+                            break
+                        except IndexError:
+                            continue
+
+                if not http_port:
+                    self.console.append("Error: Could not find httpport in oscam.conf")
+                    return
+                restart_url = f"http://{host}:{http_port}/shutdown.html?action=Restart"
+                try:
+                    response = requests.get(restart_url, timeout=5)
+                    if response.status_code == 200:
+                        self.console.append("Oscam restart command sent successfully")
+                    else:
+                        self.console.append(f"Error restarting Oscam (Status code: {response.status_code})")
+                except requests.exceptions.RequestException as e:
+                    self.console.append(f"Error sending restart command: {str(e)}")
+
+            except ftplib.all_errors as e:
+                self.console.append(f"FTP Error: {str(e)}")
+            except Exception as e:
+                self.console.append(f"Error: {str(e)}")
 
     def check_ftp_configuration(self):
         if (
@@ -242,12 +386,26 @@ class FTPConnectionWindow(QMainWindow):
             self.username_input.text() == "" or
             self.password_input.text() == ""
         ):
-            QMessageBox.warning(self, "Warning", "FTP configuration is missing. Please enter all FTP details.")
+            QMessageBox.warning(
+                self,
+                "Warning",
+                "FTP configuration is missing. Please enter all FTP details."
+            )
             return False
         return True
 
-if __name__ == "__main__":
+    def show_error_message(self, message):
+        QMessageBox.critical(self, "Error", message)
+
+    def show_success_message(self, message):
+        QMessageBox.information(self, "Success", message)
+
+def main():
     app = QApplication(sys.argv)
+    app.setStyle(QStyleFactory.create('Fusion'))
     window = FTPConnectionWindow()
     window.show()
     sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
